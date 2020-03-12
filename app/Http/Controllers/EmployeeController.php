@@ -48,6 +48,13 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
+        if ($this->isAdmin($this->user->roles)){
+            return response()->json([
+                'success' => false,
+                'message' => 'Sorry, you cannot add employee'
+            ], 500);
+        }
+
         $validator = Validator::make($request->all(), [
             'passport_serial_number' => 'required|unique:employees',
             'firstname' => 'required',
@@ -55,8 +62,7 @@ class EmployeeController extends Controller
             'middlename' => 'required',
             'address' => 'required',
             'position' => 'required',
-            'phone_number' => 'required',
-            'company_id' => 'required'
+            'phone_number' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -64,13 +70,18 @@ class EmployeeController extends Controller
         }
 
         try{
-            Employee::create($this->convertToArray($request));
+            if (is_null($this->user->company->first()->id)){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sorry, you cannot add',
+                ], 500);
+            }
+            Employee::create($this->convertToArray($request, $this->user->company->first()->id));
             return response()->json([
                 'success' => true,
                 'employee' => $request->all()
             ]);
         }catch (\Exception $exception){
-            dd($exception);
             return response()->json([
                 'success' => false,
                 'message' => 'Sorry, employee could not be added',
@@ -82,11 +93,7 @@ class EmployeeController extends Controller
     public function update(Request $request, $id)
     {
         try{
-            if ($this->isAdmin($this->user->roles)){
-                $employee = Employee::find($id);
-            }else{
-                $employee = $this->user->company->first()->employees()->find($id);
-            }
+            $employee = $this->user->company->first()->employees()->find($id);
 
             if (!$employee) {
                 return response()->json([
@@ -119,11 +126,7 @@ class EmployeeController extends Controller
 
     public function destroy($id)
     {
-        if ($this->isAdmin($this->user->roles)){
-            $employee = Employee::find($id);
-        }else{
-            $employee = $employee = $this->user->company->first()->employees()->find($id);
-        }
+        $employee = $this->user->company->first()->employees()->find($id);
 
         if (!$employee) {
             return response()->json([
@@ -145,7 +148,7 @@ class EmployeeController extends Controller
         }
     }
 
-    public function convertToArray($request)
+    public function convertToArray($request, $company_id)
     {
         return [
             'passport_serial_number' => $request->passport_serial_number,
@@ -155,7 +158,7 @@ class EmployeeController extends Controller
             'address' => $request->address,
             'position' => $request->position,
             'phone_number' => $request->phone_number,
-            'company_id' => $request->company_id
+            'company_id' => $company_id
         ];
     }
 

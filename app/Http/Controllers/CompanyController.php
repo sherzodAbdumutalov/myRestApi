@@ -46,6 +46,12 @@ class CompanyController extends Controller
 
     public function store(Request $request)
     {
+        if (!$this->isAdmin($this->user->roles)){
+            return response()->json([
+                'success' => false,
+                'message' => 'Sorry, you cannot add'
+            ], 400);
+        }
         $validator = Validator::make($request->all(), [
             'name' => 'required',
             'owner_firstname' => 'required',
@@ -83,15 +89,13 @@ class CompanyController extends Controller
                 $company = Company::find($id);
             }else{
                 $company = $this->user->company()->find($id);
-
-                if (!$company) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Sorry, company with id ' . $id . ' cannot be found'
-                    ], 400);
-                }
             }
-
+            if (!$company) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sorry, company with id ' . $id . ' cannot be found'
+                ], 400);
+            }
 
             $updated = $company->fill($request->all())->save();
 
@@ -120,13 +124,9 @@ class CompanyController extends Controller
         if ($this->isAdmin($this->user->roles)){
             $company = Company::find($id);
         }else{
-            $company = $this->user->company()->find($id);
-        }
-
-        if (!$company) {
             return response()->json([
                 'success' => false,
-                'message' => 'Sorry, company with id ' . $id . ' cannot be found'
+                'message' => 'Sorry, you cannot delete'
             ], 400);
         }
 
