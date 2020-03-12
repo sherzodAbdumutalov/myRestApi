@@ -93,7 +93,16 @@ class EmployeeController extends Controller
     public function update(Request $request, $id)
     {
         try{
-            $employee = $this->user->company->first()->employees()->find($id);
+            if ($this->isAdmin($this->user->roles)){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'you cannot update'
+                ], 500);
+            }else{
+                $employee = $this->user->company->first()->employees()->find($id);
+
+            }
+
 
             if (!$employee) {
                 return response()->json([
@@ -126,7 +135,14 @@ class EmployeeController extends Controller
 
     public function destroy($id)
     {
-        $employee = $this->user->company->first()->employees()->find($id);
+        if ($this->isAdmin($this->user->roles)){
+            return response()->json([
+                'success' => false,
+                'message' => 'you cannot delete'
+            ], 500);
+        }else{
+            $employee = $employee = $this->user->company->first()->employees()->find($id);
+        }
 
         if (!$employee) {
             return response()->json([
